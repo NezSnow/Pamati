@@ -136,29 +136,30 @@ function Lightbox({ item, items, onClose, onDelete }: {
           <X size={16} />
         </button>
 
-        {/* Delete button — bottom right */}
-        <motion.button
-          onClick={handleDelete}
-          disabled={deleting}
-          animate={confirmDelete ? { scale: [1, 1.05, 1] } : {}}
-          className={`absolute bottom-6 right-6 flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all ${
-            confirmDelete
-              ? 'bg-red-500/90 text-white'
-              : 'glass text-white/40 hover:text-red-400'
-          }`}
-        >
-          <Trash2 size={14} />
-          {deleting ? 'Deleting…' : confirmDelete ? 'Confirm delete?' : 'Delete'}
-        </motion.button>
-
-        {confirmDelete && (
-          <button
-            onClick={() => setConfirmDelete(false)}
-            className="absolute bottom-6 right-44 flex items-center gap-1.5 px-3 py-2 rounded-full glass text-white/40 hover:text-white text-sm transition-colors"
+        {/* Delete controls — responsive button group */}
+        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-2 max-w-[92vw]">
+          {confirmDelete && (
+            <button
+              onClick={() => setConfirmDelete(false)}
+              className="px-4 py-2 rounded-full glass text-white/60 hover:text-white text-sm transition-colors whitespace-nowrap"
+            >
+              Cancel
+            </button>
+          )}
+          <motion.button
+            onClick={handleDelete}
+            disabled={deleting}
+            animate={confirmDelete ? { scale: [1, 1.04, 1] } : {}}
+            className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap ${
+              confirmDelete
+                ? 'bg-red-500/90 text-white'
+                : 'glass text-white/40 hover:text-red-400'
+            }`}
           >
-            Cancel
-          </button>
-        )}
+            <Trash2 size={14} />
+            {deleting ? 'Deleting…' : confirmDelete ? 'Confirm delete?' : 'Delete'}
+          </motion.button>
+        </div>
 
         <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-white/30 text-sm">{current + 1} / {items.length}</div>
       </div>
