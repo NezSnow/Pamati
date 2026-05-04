@@ -1,6 +1,19 @@
 const CLOUD_NAME = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME as string | undefined
 const UPLOAD_PRESET = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET as string | undefined
 
+/**
+ * Transform a Cloudinary secure_url to serve a resized, format-optimised variant.
+ * - Non-Cloudinary URLs (Supabase legacy, blob:) are returned unchanged.
+ * - f_auto: WebP/AVIF in supporting browsers, JPEG elsewhere.
+ * - q_auto: Cloudinary picks the best quality/size balance automatically.
+ * - w_<width>: resize to this pixel width (height stays proportional).
+ */
+export function cloudinaryUrl(url: string, width: number): string {
+  if (!url || url.startsWith('blob:') || !url.includes('res.cloudinary.com')) return url
+  // Insert transform segment right after /upload/
+  return url.replace('/upload/', `/upload/f_auto,q_auto,w_${width}/`)
+}
+
 interface OptimizedBlob {
   blob: Blob
   /** Filename hint for multipart upload — WebP-first, JPEG fallback gives .jpg */

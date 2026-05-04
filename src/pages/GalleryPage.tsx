@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { X, Plus, ChevronLeft, ChevronRight, ImageIcon, Sparkles, ArrowLeft, Trash2, AlertCircle } from 'lucide-react'
 import { useGalleryStore, ALL_TAGS, type GalleryItem } from '../store/galleryStore'
 import { useAuthStore } from '../store/authStore'
+import { cloudinaryUrl } from '../lib/cloudinary'
 import Layout from '../components/Layout'
 import PageTransition from '../components/PageTransition'
 
@@ -89,10 +90,11 @@ function Lightbox({ item, items, onClose, onDelete }: {
             className="max-h-[80vh] max-w-[80vw]"
           >
             <img
-              src={currentItem.image_url}
+              src={cloudinaryUrl(currentItem.image_url, 1600)}
               alt=""
               className="max-h-[80vh] max-w-[80vw] object-contain rounded-2xl"
               style={{ boxShadow: 'var(--theme-glow-shadow)' }}
+              decoding="async"
             />
             {currentItem.caption && (
               <p className="text-center text-white/50 text-sm mt-4">{currentItem.caption}</p>
@@ -345,19 +347,20 @@ export default function GalleryPage() {
               {displayed.map((item, i) => (
                 <motion.div
                   key={item.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.04, duration: 0.4 }}
+                  initial={i < 12 ? { opacity: 0, y: 20 } : false}
+                  animate={i < 12 ? { opacity: 1, y: 0 } : undefined}
+                  transition={{ delay: i < 12 ? i * 0.04 : 0, duration: 0.4 }}
                   className="break-inside-avoid group cursor-pointer relative rounded-2xl overflow-hidden"
                   style={{ border: '1px solid rgba(255,255,255,0.06)' }}
                   onClick={() => setLightbox(item)}
                   whileHover={{ scale: 1.02 }}
                 >
                   <img
-                    src={item.image_url}
+                    src={cloudinaryUrl(item.image_url, 600)}
                     alt={item.caption ?? ''}
                     className="w-full object-cover group-hover:scale-105 transition-transform duration-500"
                     loading="lazy"
+                    decoding="async"
                   />
                   <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all duration-300 flex items-end">
                     <div className="p-3 w-full translate-y-full group-hover:translate-y-0 transition-transform duration-300">

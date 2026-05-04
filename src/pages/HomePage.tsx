@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom'
 import { ArrowRight, Calendar, Image, MapPin, Sparkles } from 'lucide-react'
 import { useMemoriesStore } from '../store/memoriesStore'
 import { useGalleryStore } from '../store/galleryStore'
+import { cloudinaryUrl } from '../lib/cloudinary'
 import { useBucketStore } from '../store/bucketStore'
 import { useAuthStore } from '../store/authStore'
 import Layout from '../components/Layout'
@@ -94,7 +95,7 @@ function StoryCard({ items }: { items: { image_url: string; caption: string | nu
         <AnimatePresence mode="wait">
           <motion.img
             key={current}
-            src={items[current].image_url}
+            src={cloudinaryUrl(items[current].image_url, 800)}
             alt=""
             initial={{ opacity: 0, scale: 1.04 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -102,6 +103,7 @@ function StoryCard({ items }: { items: { image_url: string; caption: string | nu
             transition={{ duration: 0.4 }}
             className="absolute inset-0 w-full h-full object-cover"
             onError={next}
+            decoding="async"
           />
         </AnimatePresence>
 
@@ -258,9 +260,10 @@ export default function HomePage() {
                 >
                   {latestMemory?.images?.[0] ? (
                     <img
-                      src={latestMemory.images[0].image_url}
+                      src={cloudinaryUrl(latestMemory.images[0].image_url, 900)}
                       alt={latestMemory.title}
                       className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                      decoding="async"
                     />
                   ) : (
                     <div className="absolute inset-0"
