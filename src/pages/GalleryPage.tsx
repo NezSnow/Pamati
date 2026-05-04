@@ -112,7 +112,8 @@ function Lightbox({ item, items, onClose, onDelete }: {
         {items.length > 1 && (
           <button
             onClick={prev}
-            className="absolute left-3 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full glass flex items-center justify-center text-white/60 hover:text-white transition-colors"
+            className="absolute z-20 left-3 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full flex items-center justify-center text-white/90 hover:text-white transition-colors"
+            style={{ background: 'rgba(9,7,17,0.9)', border: '1px solid rgba(255,255,255,0.22)' }}
             aria-label="Previous photo"
           >
             <ChevronLeft size={22} />
@@ -123,7 +124,8 @@ function Lightbox({ item, items, onClose, onDelete }: {
         {items.length > 1 && (
           <button
             onClick={next}
-            className="absolute right-3 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full glass flex items-center justify-center text-white/60 hover:text-white transition-colors"
+            className="absolute z-20 right-3 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full flex items-center justify-center text-white/90 hover:text-white transition-colors"
+            style={{ background: 'rgba(9,7,17,0.9)', border: '1px solid rgba(255,255,255,0.22)' }}
             aria-label="Next photo"
           >
             <ChevronRight size={22} />
@@ -133,7 +135,8 @@ function Lightbox({ item, items, onClose, onDelete }: {
         {/* ← Back — top left (single close button, no X duplicate) */}
         <button
           onClick={onClose}
-          className="absolute top-4 left-4 flex items-center gap-1.5 px-3 py-2 rounded-full glass text-white/60 hover:text-white text-sm font-medium transition-colors"
+          className="absolute z-20 top-4 left-4 flex items-center gap-1.5 px-3 py-2 rounded-full text-white hover:text-white text-sm font-medium transition-colors"
+          style={{ background: 'rgba(9,7,17,0.92)', border: '1px solid rgba(255,255,255,0.22)' }}
           aria-label="Close"
         >
           <ArrowLeft size={15} />
@@ -141,7 +144,7 @@ function Lightbox({ item, items, onClose, onDelete }: {
         </button>
 
         {/* 🗑 Delete — top right, icon only; turns red on first tap for confirm */}
-        <div className="absolute top-4 right-4 flex items-center gap-2">
+        <div className="absolute z-20 top-4 right-4 flex items-center gap-2">
           <AnimatePresence>
             {confirmDelete && (
               <motion.button
@@ -150,7 +153,8 @@ function Lightbox({ item, items, onClose, onDelete }: {
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: 8 }}
                 onClick={() => setConfirmDelete(false)}
-                className="px-3 py-2 rounded-full glass text-white/60 hover:text-white text-xs font-medium transition-colors whitespace-nowrap"
+                className="px-3 py-2 rounded-full text-white/90 hover:text-white text-xs font-medium transition-colors whitespace-nowrap"
+                style={{ background: 'rgba(9,7,17,0.92)', border: '1px solid rgba(255,255,255,0.22)' }}
               >
                 Cancel
               </motion.button>
@@ -163,8 +167,9 @@ function Lightbox({ item, items, onClose, onDelete }: {
             className={`flex items-center gap-1.5 px-3 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap ${
               confirmDelete
                 ? 'bg-red-500/90 text-white'
-                : 'glass text-white/40 hover:text-red-400'
+                : 'text-white/90 hover:text-red-300'
             }`}
+            style={!confirmDelete ? { background: 'rgba(9,7,17,0.92)', border: '1px solid rgba(255,255,255,0.22)' } : undefined}
           >
             <Trash2 size={15} />
             {deleting
