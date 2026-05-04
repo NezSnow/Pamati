@@ -5,7 +5,7 @@ import { Eye, EyeOff, Sparkles } from 'lucide-react'
 import { useAuthStore } from '../store/authStore'
 import Ballpit from '../components/Ballpit'
 import Grainient from '../components/Grainient'
-import { THEMES, type ThemeKey } from '../lib/fruitTheme'
+import { THEMES, getThemeKeyFromEmail, type ThemeKey } from '../lib/fruitTheme'
 
 const FRUIT_KEYS: ThemeKey[] = ['strawberry', 'blackberry', 'blueberry', 'cherry']
 
@@ -48,9 +48,9 @@ export default function LoginPage() {
     e.preventDefault()
     if (!selectedTheme || !theme) return
 
-    // Validate: check if the email matches the selected fruit's user
+    // Validate: check if the email belongs to the selected fruit user
     const normalizedEmail = email.toLowerCase().trim()
-    if (normalizedEmail && normalizedEmail !== theme.email) {
+    if (normalizedEmail && getThemeKeyFromEmail(normalizedEmail) !== selectedTheme) {
       setThemeError(`Wrong theme selected for this user. ${theme.label} is for ${theme.user} only.`)
       return
     }

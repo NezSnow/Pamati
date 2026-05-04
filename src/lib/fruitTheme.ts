@@ -29,7 +29,7 @@ export const THEMES: Record<ThemeKey, FruitTheme> = {
   strawberry: {
     label: 'Strawberry',
     user: 'Lengua',
-    email: 'leslie@pamati.app',
+    email: 'leslie@sponty.app',
     emoji: '🍓',
     gradient: 'linear-gradient(135deg, #ff6b9d, #ff4577)',
     bgGradient:
@@ -51,7 +51,7 @@ export const THEMES: Record<ThemeKey, FruitTheme> = {
   blackberry: {
     label: 'Blackberry',
     user: 'Drew',
-    email: 'david@pamati.app',
+    email: 'david@sponty.app',
     emoji: '🫚',
     gradient: 'linear-gradient(135deg, #2d1b69, #1a0a3d)',
     bgGradient:
@@ -73,7 +73,7 @@ export const THEMES: Record<ThemeKey, FruitTheme> = {
   blueberry: {
     label: 'Blueberry',
     user: 'Paul',
-    email: 'paul@pamati.app',
+    email: 'paul@sponty.app',
     emoji: '🫐',
     gradient: 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
     bgGradient:
@@ -95,7 +95,7 @@ export const THEMES: Record<ThemeKey, FruitTheme> = {
   cherry: {
     label: 'Cherry',
     user: 'Shen',
-    email: 'shane@pamati.app',
+    email: 'shane@sponty.app',
     emoji: '🍒',
     gradient: 'linear-gradient(135deg, #ef4444, #b91c1c)',
     bgGradient:
@@ -117,6 +117,11 @@ export const THEMES: Record<ThemeKey, FruitTheme> = {
 }
 
 const EMAIL_TO_THEME: Record<string, ThemeKey> = {
+  'leslie@sponty.app': 'strawberry',
+  'david@sponty.app': 'blackberry',
+  'paul@sponty.app': 'blueberry',
+  'shane@sponty.app': 'cherry',
+  // Backward compatibility with old domain
   'leslie@pamati.app': 'strawberry',
   'david@pamati.app': 'blackberry',
   'paul@pamati.app': 'blueberry',

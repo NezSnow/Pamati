@@ -8,6 +8,11 @@ import { THEMES, getThemeKeyFromEmail, isThemeKey } from '../lib/fruitTheme'
 const THEME_STORAGE_KEY = 'sponty_fruit_theme'
 
 const ALLOWED_EMAILS = [
+  'david@sponty.app',
+  'leslie@sponty.app',
+  'shane@sponty.app',
+  'paul@sponty.app',
+  // Backward compatibility with old domain
   'david@pamati.app',
   'leslie@pamati.app',
   'shane@pamati.app',
@@ -94,7 +99,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
 
     const normalized = email.toLowerCase().trim()
-    const fromLogin = chosenFruit && THEMES[chosenFruit].email === normalized ? chosenFruit : null
+    const fromLogin = chosenFruit && getThemeKeyFromEmail(normalized) === chosenFruit ? chosenFruit : null
     const theme = fromLogin ?? getThemeKeyFromEmail(data.user?.email) ?? 'strawberry'
 
     try {
