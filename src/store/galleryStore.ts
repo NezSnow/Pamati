@@ -45,7 +45,7 @@ interface GalleryState {
   activeTag: string
   lightboxImage: GalleryItem | null
   fetch: () => Promise<void>
-  upload: (file: File, tags: string[], caption?: string) => Promise<void>
+  upload: (file: File, tags: string[], caption?: string, onProgress?: (percent: number) => void) => Promise<void>
   deleteItem: (id: string) => Promise<void>
   setActiveTag: (tag: string) => void
   setLightbox: (item: GalleryItem | null) => void
@@ -69,7 +69,7 @@ export const useGalleryStore = create<GalleryState>((set, get) => ({
     set({ loading: false })
   },
 
-  upload: async (file, tags, caption) => {
+  upload: async (file, tags, caption, onProgress) => {
     // Show optimistic preview immediately using local blob URL
     const tempId = `temp-${Date.now()}`
     const previewUrl = URL.createObjectURL(file)
@@ -84,7 +84,7 @@ export const useGalleryStore = create<GalleryState>((set, get) => ({
 
     try {
       // Upload to Cloudinary, then save URL to database
-      const publicUrl = await uploadToCloudinary(file)
+      const publicUrl = await uploadToCloudinary(file, onProgress)
 
       const { data: inserted, error: insertError } = await supabase.from('gallery').insert({
         image_url: publicUrl,
@@ -112,6 +112,7 @@ export const useGalleryStore = create<GalleryState>((set, get) => ({
       const msg = err instanceof Error ? err.message : 'Upload failed. Please try again.'
       set({ uploadError: msg })
       setTimeout(() => set({ uploadError: null }), 6000)
+      throw err
     }
   },
 

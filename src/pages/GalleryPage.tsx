@@ -174,6 +174,7 @@ function UploadModal({ onClose }: { onClose: () => void }) {
   const [selectedTags, setSelectedTags] = useState<string[]>([])
   const [caption, setCaption] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [progress, setProgress] = useState(0)
 
   const handleFile = (f: File) => {
     setFile(f)
@@ -184,12 +185,17 @@ function UploadModal({ onClose }: { onClose: () => void }) {
     setSelectedTags(t => t.includes(tag) ? t.filter(x => x !== tag) : [...t, tag])
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!file) return
-    // Close immediately — optimistic preview shows in gallery instantly
-    upload(file, selectedTags, caption || undefined)
-    onClose()
+    if (!file || submitting) return
+    setSubmitting(true)
+    setProgress(0)
+    try {
+      await upload(file, selectedTags, caption || undefined, setProgress)
+      onClose()
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   return (
@@ -256,8 +262,8 @@ function UploadModal({ onClose }: { onClose: () => void }) {
             className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/20 text-sm outline-none border-theme-focus" />
 
           <div className="flex gap-3 pt-2">
-            <button type="button" onClick={onClose}
-              className="flex-1 py-3 rounded-xl glass-light text-white/50 hover:text-white text-sm transition-colors">
+            <button type="button" onClick={onClose} disabled={submitting}
+              className="flex-1 py-3 rounded-xl glass-light text-white/50 hover:text-white text-sm transition-colors disabled:opacity-40">
               Cancel
             </button>
             <motion.button type="submit" disabled={submitting || !file}
@@ -267,6 +273,30 @@ function UploadModal({ onClose }: { onClose: () => void }) {
               {submitting ? 'Uploading...' : 'Upload'}
             </motion.button>
           </div>
+
+          <AnimatePresence>
+            {submitting && (
+              <motion.div
+                initial={{ opacity: 0, y: 4 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 4 }}
+                className="pt-2"
+              >
+                <div className="flex items-center justify-between text-xs text-white/50 mb-1.5">
+                  <span>Upload progress</span>
+                  <span>{progress}%</span>
+                </div>
+                <div className="h-2 rounded-full bg-white/10 overflow-hidden">
+                  <motion.div
+                    className="h-full rounded-full"
+                    style={{ background: 'var(--theme-gradient)' }}
+                    animate={{ width: `${progress}%` }}
+                    transition={{ duration: 0.2, ease: 'easeOut' }}
+                  />
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </form>
         <button onClick={onClose}
           className="absolute top-4 right-4 w-8 h-8 rounded-full glass flex items-center justify-center text-white/40 hover:text-white transition-colors">

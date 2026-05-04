@@ -14,6 +14,8 @@ export function cloudinaryUrl(url: string, width: number): string {
   return url.replace('/upload/', `/upload/f_auto,q_auto,w_${width}/`)
 }
 
+type UploadProgressCallback = (percent: number) => void
+
 interface OptimizedBlob {
   blob: Blob
   /** Filename hint for multipart upload — WebP-first, JPEG fallback gives .jpg */
@@ -69,7 +71,10 @@ function optimizeImage(file: File | Blob, maxWidth = 2000): Promise<OptimizedBlo
  * Optimize then upload a file to Cloudinary using an unsigned upload preset.
  * Returns the Cloudinary secure_url — a permanent CDN URL ready to store in the DB.
  */
-export async function uploadToCloudinary(file: File | Blob): Promise<string> {
+export async function uploadToCloudinary(
+  file: File | Blob,
+  onProgress?: UploadProgressCallback,
+): Promise<string> {
   if (!CLOUD_NAME?.trim() || !UPLOAD_PRESET?.trim()) {
     throw new Error(
       'Cloudinary env vars missing. Add VITE_CLOUDINARY_CLOUD_NAME and VITE_CLOUDINARY_UPLOAD_PRESET to `.env`, then restart `npm run dev`.',
@@ -82,14 +87,47 @@ export async function uploadToCloudinary(file: File | Blob): Promise<string> {
   fd.append('upload_preset', UPLOAD_PRESET!)
 
   const uploadUrl = `https://api.cloudinary.com/v1_1/${CLOUD_NAME!.trim()}/image/upload`
-  const res = await fetch(uploadUrl, { method: 'POST', body: fd })
-  const json = await res.json() as { secure_url?: string; error?: { message: string } }
+  const json = await uploadWithProgress(uploadUrl, fd, onProgress)
 
-  if (!res.ok || !json.secure_url) {
-    const reason = json.error?.message ?? res.statusText
+  if (!json.secure_url) {
+    const reason = json.error?.message ?? 'Unknown Cloudinary upload error'
     console.error('[Cloudinary] Upload failed:', reason, json)
     throw new Error(`Cloudinary upload failed: ${reason}`)
   }
 
   return json.secure_url
+}
+
+function uploadWithProgress(
+  uploadUrl: string,
+  formData: FormData,
+  onProgress?: UploadProgressCallback,
+): Promise<{ secure_url?: string; error?: { message: string } }> {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest()
+    xhr.open('POST', uploadUrl)
+
+    xhr.upload.onprogress = (event) => {
+      if (!onProgress || !event.lengthComputable) return
+      const percent = Math.round((event.loaded / event.total) * 100)
+      onProgress(Math.max(0, Math.min(100, percent)))
+    }
+
+    xhr.onload = () => {
+      try {
+        const json = JSON.parse(xhr.responseText || '{}') as { secure_url?: string; error?: { message: string } }
+        if (xhr.status >= 200 && xhr.status < 300) {
+          onProgress?.(100)
+          resolve(json)
+          return
+        }
+        resolve(json)
+      } catch {
+        reject(new Error('Invalid Cloudinary response'))
+      }
+    }
+
+    xhr.onerror = () => reject(new Error('Network error while uploading to Cloudinary'))
+    xhr.send(formData)
+  })
 }
