@@ -101,6 +101,7 @@ function StoryCard({ items }: { items: { image_url: string; caption: string | nu
             exit={{ opacity: 0 }}
             transition={{ duration: 0.4 }}
             className="absolute inset-0 w-full h-full object-cover"
+            onError={next}
           />
         </AnimatePresence>
 
@@ -184,6 +185,7 @@ export default function HomePage() {
 
   const latestMemory = memories[0]
   const upcomingPlan = bucket.find(b => b.status === 'planned')
+  const validGallery = gallery.filter(i => i.image_url && !i.image_url.startsWith('blob:'))
 
   return (
     <Layout>
@@ -288,7 +290,7 @@ export default function HomePage() {
 
             {/* Story-style Photo Slideshow */}
             <motion.div variants={item}>
-              <StoryCard items={gallery} />
+              <StoryCard items={validGallery} />
             </motion.div>
 
             {/* Upcoming Plan */}
