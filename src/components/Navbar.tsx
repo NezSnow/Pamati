@@ -38,12 +38,7 @@ export default function Navbar() {
 
   return (
     <>
-      <motion.nav
-        initial={{ y: -80, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] }}
-        className="fixed top-0 left-0 right-0 z-50"
-      >
+      <nav className="fixed top-0 left-0 right-0 z-50">
         <div className="glass border-b px-6 py-0" style={{ borderColor: 'color-mix(in srgb, var(--theme-accent) 12%, transparent)' }}>
           <div className="max-w-7xl mx-auto flex items-center justify-between h-16">
             {/* Logo */}
@@ -245,7 +240,7 @@ export default function Navbar() {
             </NavLink>
           ))}
         </div>
-      </motion.nav>
+      </nav>
 
       {/* Profile modal */}
       <AnimatePresence>
