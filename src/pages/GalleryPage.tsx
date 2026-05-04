@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Plus, ChevronLeft, ChevronRight, ImageIcon, Sparkles, ArrowLeft, Trash2, AlertCircle, X } from 'lucide-react'
 import { useGalleryStore, ALL_TAGS, type GalleryItem } from '../store/galleryStore'
-import { useAuthStore } from '../store/authStore'
 import { cloudinaryUrl } from '../lib/cloudinary'
 import Layout from '../components/Layout'
 import PageTransition from '../components/PageTransition'
@@ -69,17 +69,27 @@ function Lightbox({ item, items, onClose, onDelete }: {
     setDeleting(false)
   }
 
-  return (
+  const btnBase =
+    'rounded-full flex items-center justify-center text-white/90 hover:text-white transition-colors'
+  const btnStyle = { background: 'rgba(9,7,17,0.92)', border: '1px solid rgba(255,255,255,0.22)' } as const
+
+  return createPortal(
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 flex items-center justify-center"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Photo viewer"
+      className="fixed inset-0 z-[100] flex items-center justify-center"
       onClick={onClose}
     >
       <div className="absolute inset-0 bg-black/95 backdrop-blur-2xl" />
 
-      <div className="relative z-10 w-full h-full flex items-center justify-center p-8" onClick={e => e.stopPropagation()}>
+      <div
+        className="relative z-10 w-full max-h-full flex flex-col items-center justify-center px-3 py-6 sm:px-6 sm:py-10"
+        onClick={e => e.stopPropagation()}
+      >
         <AnimatePresence mode="wait">
           <motion.div
             key={current}
@@ -87,19 +97,103 @@ function Lightbox({ item, items, onClose, onDelete }: {
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
             transition={{ duration: 0.3 }}
-            className="max-h-[80vh] max-w-[80vw]"
+            className="flex flex-col items-center w-full max-w-[min(92vw,1200px)]"
           >
-            <img
-              src={cloudinaryUrl(currentItem.image_url, 1600)}
-              alt=""
-              className="max-h-[80vh] max-w-[80vw] object-contain rounded-2xl"
-              style={{ boxShadow: 'var(--theme-glow-shadow)' }}
-              decoding="async"
-            />
+            <div className="relative inline-block max-w-full">
+              <img
+                src={cloudinaryUrl(currentItem.image_url, 1600)}
+                alt=""
+                className="block max-h-[min(78vh,calc(100dvh-8rem))] w-auto max-w-full object-contain rounded-2xl"
+                style={{ boxShadow: 'var(--theme-glow-shadow)' }}
+                decoding="async"
+              />
+
+              {/* Toolbar anchored to the photo (not hidden under nav / screen edges) */}
+              <div className="absolute inset-0 rounded-2xl overflow-hidden pointer-events-none">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className={`pointer-events-auto absolute top-2 left-2 z-10 flex items-center gap-1.5 px-2.5 py-1.5 sm:px-3 sm:py-2 ${btnBase} text-sm font-medium`}
+                  style={btnStyle}
+                  aria-label="Close"
+                >
+                  <ArrowLeft size={15} className="shrink-0" />
+                  <span className="hidden sm:inline">Back</span>
+                </button>
+
+                <div className="pointer-events-auto absolute top-2 right-2 z-10 flex items-center gap-1.5 sm:gap-2">
+                  <AnimatePresence>
+                    {confirmDelete && (
+                      <motion.button
+                        key="cancel"
+                        type="button"
+                        initial={{ opacity: 0, x: 8 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: 8 }}
+                        onClick={() => setConfirmDelete(false)}
+                        className={`px-2.5 py-1.5 sm:px-3 sm:py-2 ${btnBase} text-xs font-medium whitespace-nowrap`}
+                        style={btnStyle}
+                      >
+                        Cancel
+                      </motion.button>
+                    )}
+                  </AnimatePresence>
+                  <motion.button
+                    type="button"
+                    onClick={handleDelete}
+                    disabled={deleting}
+                    title={confirmDelete ? 'Tap again to confirm' : 'Delete photo'}
+                    className={`pointer-events-auto flex items-center gap-1.5 px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap ${
+                      confirmDelete
+                        ? 'bg-red-500/90 text-white'
+                        : `${btnBase} hover:text-red-300`
+                    }`}
+                    style={!confirmDelete ? btnStyle : undefined}
+                  >
+                    <Trash2 size={15} className="shrink-0" />
+                    {deleting
+                      ? <span className="text-xs">Deleting…</span>
+                      : confirmDelete
+                        ? <span className="text-xs">Tap again</span>
+                        : null}
+                  </motion.button>
+                </div>
+
+                {items.length > 1 && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={prev}
+                      className={`pointer-events-auto absolute left-1.5 top-1/2 z-10 -translate-y-1/2 w-10 h-10 sm:w-11 sm:h-11 ${btnBase}`}
+                      style={btnStyle}
+                      aria-label="Previous photo"
+                    >
+                      <ChevronLeft size={22} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={next}
+                      className={`pointer-events-auto absolute right-1.5 top-1/2 z-10 -translate-y-1/2 w-10 h-10 sm:w-11 sm:h-11 ${btnBase}`}
+                      style={btnStyle}
+                      aria-label="Next photo"
+                    >
+                      <ChevronRight size={22} />
+                    </button>
+                  </>
+                )}
+
+                <div className="pointer-events-none absolute bottom-0 left-0 right-0 z-10 rounded-b-2xl bg-gradient-to-t from-black/80 via-black/35 to-transparent px-3 pt-12 pb-2.5 sm:pt-14 sm:pb-3">
+                  <p className="text-center text-white/90 text-xs font-medium tracking-widest tabular-nums">
+                    {current + 1} / {items.length}
+                  </p>
+                </div>
+              </div>
+            </div>
+
             {currentItem.caption && (
-              <p className="text-center text-white/50 text-sm mt-4">{currentItem.caption}</p>
+              <p className="text-center text-white/50 text-sm mt-3 px-2">{currentItem.caption}</p>
             )}
-            <div className="flex flex-wrap justify-center gap-2 mt-3">
+            <div className="flex flex-wrap justify-center gap-2 mt-2 px-2">
               {currentItem.tags.map(t => (
                 <span key={t} className="px-2 py-0.5 rounded-full text-xs text-theme-accent"
                   style={{ background: 'color-mix(in srgb, var(--theme-accent) 15%, transparent)' }}>{t}</span>
@@ -107,85 +201,9 @@ function Lightbox({ item, items, onClose, onDelete }: {
             </div>
           </motion.div>
         </AnimatePresence>
-
-        {/* ← Prev (left edge, only when multiple) */}
-        {items.length > 1 && (
-          <button
-            onClick={prev}
-            className="absolute z-20 left-3 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full flex items-center justify-center text-white/90 hover:text-white transition-colors"
-            style={{ background: 'rgba(9,7,17,0.9)', border: '1px solid rgba(255,255,255,0.22)' }}
-            aria-label="Previous photo"
-          >
-            <ChevronLeft size={22} />
-          </button>
-        )}
-
-        {/* → Next (right edge, only when multiple) */}
-        {items.length > 1 && (
-          <button
-            onClick={next}
-            className="absolute z-20 right-3 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full flex items-center justify-center text-white/90 hover:text-white transition-colors"
-            style={{ background: 'rgba(9,7,17,0.9)', border: '1px solid rgba(255,255,255,0.22)' }}
-            aria-label="Next photo"
-          >
-            <ChevronRight size={22} />
-          </button>
-        )}
-
-        {/* ← Back — top left (single close button, no X duplicate) */}
-        <button
-          onClick={onClose}
-          className="absolute z-20 top-4 left-4 flex items-center gap-1.5 px-3 py-2 rounded-full text-white hover:text-white text-sm font-medium transition-colors"
-          style={{ background: 'rgba(9,7,17,0.92)', border: '1px solid rgba(255,255,255,0.22)' }}
-          aria-label="Close"
-        >
-          <ArrowLeft size={15} />
-          <span className="hidden sm:inline">Back</span>
-        </button>
-
-        {/* 🗑 Delete — top right, icon only; turns red on first tap for confirm */}
-        <div className="absolute z-20 top-4 right-4 flex items-center gap-2">
-          <AnimatePresence>
-            {confirmDelete && (
-              <motion.button
-                key="cancel"
-                initial={{ opacity: 0, x: 8 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: 8 }}
-                onClick={() => setConfirmDelete(false)}
-                className="px-3 py-2 rounded-full text-white/90 hover:text-white text-xs font-medium transition-colors whitespace-nowrap"
-                style={{ background: 'rgba(9,7,17,0.92)', border: '1px solid rgba(255,255,255,0.22)' }}
-              >
-                Cancel
-              </motion.button>
-            )}
-          </AnimatePresence>
-          <motion.button
-            onClick={handleDelete}
-            disabled={deleting}
-            title={confirmDelete ? 'Tap again to confirm' : 'Delete photo'}
-            className={`flex items-center gap-1.5 px-3 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap ${
-              confirmDelete
-                ? 'bg-red-500/90 text-white'
-                : 'text-white/90 hover:text-red-300'
-            }`}
-            style={!confirmDelete ? { background: 'rgba(9,7,17,0.92)', border: '1px solid rgba(255,255,255,0.22)' } : undefined}
-          >
-            <Trash2 size={15} />
-            {deleting
-              ? <span className="text-xs">Deleting…</span>
-              : confirmDelete
-                ? <span className="text-xs">Confirm?</span>
-                : null}
-          </motion.button>
-        </div>
-
-        {/* Counter — bottom center */}
-        <div className="absolute bottom-5 left-1/2 -translate-x-1/2 text-white/30 text-xs font-medium tracking-widest">
-          {current + 1} / {items.length}
-        </div>
       </div>
-    </motion.div>
+    </motion.div>,
+    document.body,
   )
 }
 
