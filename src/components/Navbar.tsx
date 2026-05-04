@@ -39,7 +39,13 @@ export default function Navbar() {
   return (
     <>
       <nav className="fixed top-0 left-0 right-0 z-50">
-        <div className="glass border-b px-6 py-0" style={{ borderColor: 'color-mix(in srgb, var(--theme-accent) 12%, transparent)' }}>
+        <div
+          className="border-b px-6 py-0"
+          style={{
+            background: '#090711',
+            borderColor: 'color-mix(in srgb, var(--theme-accent) 12%, transparent)',
+          }}
+        >
           <div className="max-w-7xl mx-auto flex items-center justify-between h-16">
             {/* Logo */}
             <NavLink to="/" className="flex items-center gap-2 group">
@@ -224,7 +230,13 @@ export default function Navbar() {
         </div>
 
         {/* Mobile bottom nav */}
-        <div className="md:hidden fixed bottom-0 left-0 right-0 glass border-t px-2 py-2 flex justify-around" style={{ borderColor: 'color-mix(in srgb, var(--theme-accent) 12%, transparent)' }}>
+        <div
+          className="md:hidden fixed bottom-0 left-0 right-0 border-t px-2 py-2 flex justify-around"
+          style={{
+            background: '#090711',
+            borderColor: 'color-mix(in srgb, var(--theme-accent) 12%, transparent)',
+          }}
+        >
           {links.map(({ to, label, icon: Icon }) => (
             <NavLink
               key={to}
