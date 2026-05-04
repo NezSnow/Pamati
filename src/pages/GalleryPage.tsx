@@ -84,7 +84,7 @@ function Lightbox({ item, items, onClose, onDelete }: {
       className="fixed inset-0 z-[100] flex items-center justify-center"
       onClick={onClose}
     >
-      <div className="absolute inset-0 bg-black/95 backdrop-blur-2xl" />
+      <div className="absolute inset-0 backdrop-blur-2xl" />
 
       <div
         className="relative z-10 w-full max-h-full flex flex-col items-center justify-center px-3 py-6 sm:px-6 sm:py-10"
