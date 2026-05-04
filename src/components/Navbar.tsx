@@ -156,8 +156,9 @@ export default function Navbar() {
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: -8, scale: 0.95 }}
                         transition={{ type: 'spring', stiffness: 380, damping: 28 }}
-                        className="absolute right-0 top-full mt-2 w-52 glass rounded-2xl overflow-hidden z-50"
+                        className="absolute right-0 top-full mt-2 w-52 rounded-2xl overflow-hidden z-50"
                         style={{
+                          background: '#090711',
                           border: '1px solid color-mix(in srgb, var(--theme-accent) 20%, transparent)',
                           boxShadow: 'var(--theme-glow-shadow)',
                         }}
