@@ -31,7 +31,7 @@ export default function AnimatedBackground() {
     const isMobile = window.innerWidth < 768
     const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
     // Fewer particles on mobile / reduced-motion; no glow on mobile (expensive)
-    const particleCount = reduceMotion ? 0 : isMobile ? 20 : 60
+    const particleCount = reduceMotion ? 0 : isMobile ? 15 : 45
     const useGlow = !isMobile && !reduceMotion
 
     const colors = getParticlePalette(themeKey)
@@ -51,8 +51,8 @@ export default function AnimatedBackground() {
         y: Math.random() * window.innerHeight,
         vx: (Math.random() - 0.5) * 0.3,
         vy: (Math.random() - 0.5) * 0.3,
-        size: Math.random() * 2 + 0.5,
-        opacity: Math.random() * 0.5 + 0.1,
+        size: isMobile ? Math.random() * 1.5 + 0.5 : Math.random() * 3 + 1,
+        opacity: isMobile ? Math.random() * 0.3 + 0.1 : Math.random() * 0.55 + 0.25,
         color: colors[Math.floor(Math.random() * colors.length)],
       })
     }
@@ -66,7 +66,7 @@ export default function AnimatedBackground() {
         ctx.fillStyle = p.color
         ctx.globalAlpha = p.opacity
         if (useGlow) {
-          ctx.shadowBlur = 10
+          ctx.shadowBlur = 14
           ctx.shadowColor = p.color
         }
         ctx.fill()
