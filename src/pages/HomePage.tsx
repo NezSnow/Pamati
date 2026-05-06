@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Link } from 'react-router-dom'
-import { ArrowRight, Calendar, Image, MapPin, Sparkles } from 'lucide-react'
+import { ArrowRight, Calendar, Image, MapPin, Sparkles, Settings } from 'lucide-react'
 import { useMemoriesStore } from '../store/memoriesStore'
 import { useGalleryStore } from '../store/galleryStore'
 import { cloudinaryUrl } from '../lib/cloudinary'
@@ -9,6 +9,7 @@ import { useBucketStore } from '../store/bucketStore'
 import { useAuthStore } from '../store/authStore'
 import Layout from '../components/Layout'
 import PageTransition from '../components/PageTransition'
+import ProfileModal from '../components/ProfileModal'
 
 const STORY_DURATION = 4000 // ms per slide
 
@@ -178,6 +179,7 @@ export default function HomePage() {
   const { items: gallery, fetch: fetchGallery } = useGalleryStore()
   const { items: bucket, fetch: fetchBucket } = useBucketStore()
   const { profile } = useAuthStore()
+  const [profileOpen, setProfileOpen] = useState(false)
 
   useEffect(() => {
     fetchMemories()
@@ -240,6 +242,16 @@ export default function HomePage() {
                   Gallery <Image size={15} />
                 </motion.button>
               </Link>
+              {profile && (
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.97 }}
+                  onClick={() => setProfileOpen(true)}
+                  className="glass-light flex items-center gap-2 px-6 py-3 rounded-xl font-medium text-white/70 text-sm hover:text-white transition-colors"
+                >
+                  Edit Profile <Settings size={15} />
+                </motion.button>
+              )}
             </motion.div>
           </motion.div>
 
@@ -348,6 +360,9 @@ export default function HomePage() {
           </motion.div>
         </div>
       </PageTransition>
+      <AnimatePresence>
+        {profileOpen && <ProfileModal onClose={() => setProfileOpen(false)} />}
+      </AnimatePresence>
     </Layout>
   )
 }

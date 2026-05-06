@@ -252,6 +252,16 @@ export default function Navbar() {
               <span className="text-[10px]">{label}</span>
             </NavLink>
           ))}
+          {profile && (
+            <button
+              type="button"
+              onClick={() => setProfileOpen(true)}
+              className="flex flex-col items-center gap-0.5 px-4 py-1.5 rounded-xl transition-all text-white/40 hover:text-[var(--theme-accent)]"
+            >
+              <Settings size={18} />
+              <span className="text-[10px]">Profile</span>
+            </button>
+          )}
         </div>
       </nav>
 
