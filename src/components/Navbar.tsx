@@ -13,8 +13,15 @@ const links = [
 ]
 
 export default function Navbar() {
-  const { profile, signOut } = useAuthStore()
+  const { user, profile, signOut } = useAuthStore()
   const navigate = useNavigate()
+
+  // Derived display values — fall back to auth user when profile row is missing
+  const displayName = profile?.name ?? (user?.email?.split('@')[0] ?? '')
+  const displayEmail = profile?.email ?? user?.email ?? ''
+  const avatarUrl = profile?.avatar_url ?? null
+  const avatarInitial = displayName.charAt(0).toUpperCase() || '?'
+  const isLoggedIn = !!user
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const [profileOpen, setProfileOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
@@ -103,7 +110,7 @@ export default function Navbar() {
 
             {/* User profile + dropdown */}
             <div className="flex items-center gap-3">
-              {profile && (
+              {isLoggedIn && (
                 <div className="relative" ref={dropdownRef}>
                   <motion.button
                     type="button"
@@ -129,16 +136,16 @@ export default function Navbar() {
                         background: 'var(--theme-gradient)',
                       }}
                     >
-                      {profile.avatar_url ? (
-                        <img src={profile.avatar_url} alt={profile.name} className="w-full h-full object-cover" />
+                      {avatarUrl ? (
+                        <img src={avatarUrl} alt={displayName} className="w-full h-full object-cover" />
                       ) : (
                         <span className="flex items-center justify-center h-full text-white text-xs font-bold">
-                          {profile.name.charAt(0).toUpperCase()}
+                          {avatarInitial}
                         </span>
                       )}
                     </div>
                     <span className="hidden sm:block text-white/70 text-sm font-medium group-hover:text-white transition-colors">
-                      {profile.name}
+                      {displayName}
                     </span>
                     <motion.div
                       animate={{ rotate: dropdownOpen ? 180 : 0 }}
@@ -173,17 +180,17 @@ export default function Navbar() {
                                 background: 'var(--theme-gradient)',
                               }}
                             >
-                              {profile.avatar_url ? (
-                                <img src={profile.avatar_url} alt={profile.name} className="w-full h-full object-cover" />
+                              {avatarUrl ? (
+                                <img src={avatarUrl} alt={displayName} className="w-full h-full object-cover" />
                               ) : (
                                 <span className="flex items-center justify-center h-full text-white text-sm font-bold">
-                                  {profile.name.charAt(0).toUpperCase()}
+                                  {avatarInitial}
                                 </span>
                               )}
                             </div>
                             <div className="min-w-0">
-                              <p className="text-white text-sm font-semibold truncate">{profile.name}</p>
-                              <p className="text-white/35 text-[11px] truncate">{profile.email}</p>
+                              <p className="text-white text-sm font-semibold truncate">{displayName}</p>
+                              <p className="text-white/35 text-[11px] truncate">{displayEmail}</p>
                             </div>
                           </div>
                         </div>
@@ -252,7 +259,7 @@ export default function Navbar() {
               <span className="text-[10px]">{label}</span>
             </NavLink>
           ))}
-          {profile && (
+          {isLoggedIn && (
             <button
               type="button"
               onClick={() => setProfileOpen(true)}

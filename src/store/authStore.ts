@@ -132,7 +132,21 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
     if (data) {
       set({ profile: data as UserProfile })
+      return
     }
+
+    // No row yet — create a default one so the UI always has a profile to show
+    const authUser = get().user
+    if (!authUser) return
+    const defaultName = (authUser.email ?? '').split('@')[0] || 'User'
+    const defaultProfile: UserProfile = {
+      id: userId,
+      email: authUser.email ?? '',
+      name: defaultName,
+      avatar_url: null,
+    }
+    const { error } = await supabase.from('users').upsert(defaultProfile)
+    if (!error) set({ profile: defaultProfile })
   },
 
   updateProfile: async (fields) => {

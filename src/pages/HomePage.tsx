@@ -178,7 +178,7 @@ export default function HomePage() {
   const { memories, fetch: fetchMemories } = useMemoriesStore()
   const { items: gallery, fetch: fetchGallery } = useGalleryStore()
   const { items: bucket, fetch: fetchBucket } = useBucketStore()
-  const { profile } = useAuthStore()
+  const { user, profile } = useAuthStore()
   const [profileOpen, setProfileOpen] = useState(false)
 
   useEffect(() => {
@@ -205,7 +205,7 @@ export default function HomePage() {
             <motion.div variants={item} className="inline-flex items-center gap-2 px-4 py-2 rounded-full mb-6 text-xs uppercase tracking-widest text-theme-accent"
               style={{ background: 'color-mix(in srgb, var(--theme-accent) 8%, transparent)', border: '1px solid color-mix(in srgb, var(--theme-accent) 15%, transparent)' }}>
               <Sparkles size={12} />
-              Welcome back, {profile?.name ?? 'friend'}
+              Welcome back, {profile?.name ?? user?.email?.split('@')[0] ?? 'friend'}
             </motion.div>
 
             <motion.h1
@@ -242,7 +242,7 @@ export default function HomePage() {
                   Gallery <Image size={15} />
                 </motion.button>
               </Link>
-              {profile && (
+              {user && (
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.97 }}
