@@ -11,7 +11,7 @@ export interface GalleryItem {
 }
 
 export const GALLERY_TAGS = ['All', 'Drew', 'Lengua', 'Shen', 'Paul']
-export const COMBO_TAGS = ['Drew & Shen', 'Drew & Lengua', 'Lengua & Paul', 'Shen & Paul']
+export const COMBO_TAGS = ['Drew & Shen', 'Drew & Lengua', 'Drew & Paul', 'Lengua & Shen', 'Lengua & Paul', 'Shen & Paul']
 export const ALL_TAGS = [...GALLERY_TAGS, ...COMBO_TAGS]
 
 // Maps legacy tag names (stored in DB before renaming) to the current display names.
