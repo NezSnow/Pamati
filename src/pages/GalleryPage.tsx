@@ -363,7 +363,7 @@ function UploadModal({ onClose }: { onClose: () => void }) {
           </div>
 
           <AnimatePresence>
-            {submitting && tab === 'upload' && (
+            {submitting && (
               <motion.div
                 initial={{ opacity: 0, y: 4 }}
                 animate={{ opacity: 1, y: 0 }}
