@@ -16,26 +16,49 @@ interface BucketState {
   items: BucketItem[]
   loading: boolean
   lastCompleted: string | null
-  fetch: () => Promise<void>
+  fetch: (opts?: { force?: boolean }) => Promise<void>
   add: (data: { title: string; description?: string; created_by: string }) => Promise<void>
   updateItem: (id: string, fields: { title?: string; description?: string | null; planned_date?: string | null }) => Promise<{ error: string | null }>
   complete: (id: string) => Promise<void>
   clearLastCompleted: () => void
 }
 
+let bucketFetchInFlight: Promise<void> | null = null
+let bucketLastFetchedAt = 0
+const BUCKET_CACHE_MS = 60_000
+
 export const useBucketStore = create<BucketState>((set, get) => ({
   items: [],
   loading: false,
   lastCompleted: null,
 
-  fetch: async () => {
-    set({ loading: true })
-    const { data } = await supabase
-      .from('bucket_list')
-      .select('*')
-      .order('created_at', { ascending: false })
-    if (data) set({ items: data as BucketItem[] })
-    set({ loading: false })
+  fetch: async (opts) => {
+    const hasCache = get().items.length > 0
+    if (!opts?.force && hasCache && Date.now() - bucketLastFetchedAt < BUCKET_CACHE_MS) {
+      return
+    }
+    if (bucketFetchInFlight) return bucketFetchInFlight
+
+    if (!hasCache) set({ loading: true })
+
+    bucketFetchInFlight = (async () => {
+      try {
+        const { data, error } = await supabase
+          .from('bucket_list')
+          .select('*')
+          .order('created_at', { ascending: false })
+        if (error) console.error('[bucketStore] fetch error:', error)
+        if (data) {
+          bucketLastFetchedAt = Date.now()
+          set({ items: data as BucketItem[] })
+        }
+      } finally {
+        set({ loading: false })
+        bucketFetchInFlight = null
+      }
+    })()
+
+    return bucketFetchInFlight
   },
 
   add: async ({ title, description, created_by }) => {

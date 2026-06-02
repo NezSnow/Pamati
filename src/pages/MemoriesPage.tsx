@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Plus, X, ChevronLeft, ChevronRight, Calendar, Upload, Sparkles, Pencil, Check, Loader2, ImagePlus, Trash2 } from 'lucide-react'
 import { useMemoriesStore, type Memory, type MemoryImage } from '../store/memoriesStore'
 import { useAuthStore } from '../store/authStore'
+import { cloudinaryUrl } from '../lib/cloudinary'
 import Layout from '../components/Layout'
 import PageTransition from '../components/PageTransition'
 
@@ -28,6 +29,7 @@ function MemoryCard({ memory, index, onClick }: { memory: Memory; index: number;
   ]
   const sizeClass = sizes[index % sizes.length]
   const img = memory.images?.[0]?.image_url
+  const thumbSrc = img ? cloudinaryUrl(img, 700) : null
 
   return (
     <motion.div
@@ -38,11 +40,13 @@ function MemoryCard({ memory, index, onClick }: { memory: Memory; index: number;
       whileHover={{ y: -6, scale: 1.01 }}
       transition={{ type: 'spring', stiffness: 300, damping: 25 }}
     >
-      {img ? (
+      {thumbSrc ? (
         <img
-          src={img}
+          src={thumbSrc}
           alt={memory.title}
           className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+          loading="lazy"
+          decoding="async"
         />
       ) : (
         <div className="absolute inset-0"
@@ -178,13 +182,14 @@ function MemoryModal({ memory, onClose }: { memory: Memory; onClose: () => void 
                 <AnimatePresence mode="wait">
                   <motion.img
                     key={currentImg}
-                    src={images[currentImg].image_url}
+                    src={cloudinaryUrl(images[currentImg].image_url, 1200)}
                     alt=""
                     initial={{ opacity: 0, scale: 1.05 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0 }}
                     transition={{ duration: 0.4 }}
                     className="absolute inset-0 w-full h-full object-cover"
+                    decoding="async"
                   />
                 </AnimatePresence>
                 <div className="absolute inset-0"
@@ -229,7 +234,7 @@ function MemoryModal({ memory, onClose }: { memory: Memory; onClose: () => void 
                       className={`flex-shrink-0 w-16 h-16 rounded-xl overflow-hidden border-2 transition-all ${
                         i === currentImg ? 'border-[var(--theme-accent)]' : 'border-transparent opacity-50'
                       }`}>
-                      <img src={img.image_url} alt="" className="w-full h-full object-cover" />
+                      <img src={cloudinaryUrl(img.image_url, 128)} alt="" className="w-full h-full object-cover" loading="lazy" decoding="async" />
                     </button>
                   ))}
                 </div>
@@ -282,7 +287,7 @@ function MemoryModal({ memory, onClose }: { memory: Memory; onClose: () => void 
                 {images.map(img => (
                   <div key={img.id} className="relative group aspect-square rounded-xl overflow-hidden"
                     style={{ border: '1px solid rgba(255,255,255,0.08)' }}>
-                    <img src={img.image_url} alt="" className="w-full h-full object-cover" />
+                    <img src={cloudinaryUrl(img.image_url, 200)} alt="" className="w-full h-full object-cover" loading="lazy" decoding="async" />
                     <motion.button
                       type="button"
                       whileHover={{ scale: 1.1 }}
@@ -519,7 +524,7 @@ export default function MemoriesPage() {
           </div>
 
           {/* Bento Grid */}
-          {loading ? (
+          {loading && memories.length === 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {[...Array(6)].map((_, i) => (
                 <div key={i} className={`${i % 3 === 0 ? 'md:col-span-2' : ''} h-64 rounded-2xl animate-pulse`}

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Plus, ChevronLeft, ChevronRight, ImageIcon, Sparkles, ArrowLeft, Trash2, AlertCircle, X } from 'lucide-react'
+import { Plus, ChevronLeft, ChevronRight, ImageIcon, Sparkles, ArrowLeft, Trash2, Download, AlertCircle, X } from 'lucide-react'
 import { useGalleryStore, ALL_TAGS, type GalleryItem } from '../store/galleryStore'
 import { cloudinaryUrl } from '../lib/cloudinary'
 import Layout from '../components/Layout'
@@ -40,6 +40,7 @@ function Lightbox({ item, items, onClose, onDelete }: {
   const [current, setCurrent] = useState(items.findIndex(i => i.id === item.id))
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [downloading, setDownloading] = useState(false)
 
   const prev = () => { setCurrent(c => (c - 1 + items.length) % items.length); setConfirmDelete(false) }
   const next = () => { setCurrent(c => (c + 1) % items.length); setConfirmDelete(false) }
@@ -67,6 +68,40 @@ function Lightbox({ item, items, onClose, onDelete }: {
       setConfirmDelete(false)
     }
     setDeleting(false)
+  }
+
+  const handleDownload = async () => {
+    setDownloading(true)
+    try {
+      const src = currentItem.image_url.startsWith('blob:')
+        ? currentItem.image_url
+        : cloudinaryUrl(currentItem.image_url, 2400)
+      const res = await fetch(src)
+      if (!res.ok) throw new Error('fetch failed')
+      const blob = await res.blob()
+      const ext = blob.type.includes('webp') ? 'webp' : blob.type.includes('png') ? 'png' : 'jpg'
+      const base = currentItem.caption
+        ?.replace(/[^\w\s-]/g, '')
+        .trim()
+        .replace(/\s+/g, '-')
+        .slice(0, 60)
+      const filename = `${base || `sponty-${current + 1}`}.${ext}`
+      const link = document.createElement('a')
+      link.href = URL.createObjectURL(blob)
+      link.download = filename
+      link.click()
+      URL.revokeObjectURL(link.href)
+    } catch {
+      window.open(
+        currentItem.image_url.startsWith('blob:')
+          ? currentItem.image_url
+          : cloudinaryUrl(currentItem.image_url, 2400),
+        '_blank',
+        'noopener,noreferrer',
+      )
+    } finally {
+      setDownloading(false)
+    }
   }
 
   const btnBase =
@@ -140,6 +175,18 @@ function Lightbox({ item, items, onClose, onDelete }: {
                   </AnimatePresence>
                   <motion.button
                     type="button"
+                    onClick={handleDownload}
+                    disabled={downloading}
+                    title="Download photo"
+                    className={`pointer-events-auto flex items-center gap-1.5 px-2.5 py-1.5 sm:px-3 sm:py-2 ${btnBase} text-sm font-medium`}
+                    style={btnStyle}
+                    aria-label="Download photo"
+                  >
+                    <Download size={15} className="shrink-0" />
+                    {downloading ? <span className="text-xs hidden sm:inline">Saving…</span> : null}
+                  </motion.button>
+                  <motion.button
+                    type="button"
                     onClick={handleDelete}
                     disabled={deleting}
                     title={confirmDelete ? 'Tap again to confirm' : 'Delete photo'}
@@ -208,12 +255,14 @@ function Lightbox({ item, items, onClose, onDelete }: {
 }
 
 function UploadModal({ onClose }: { onClose: () => void }) {
-  const { upload } = useGalleryStore()
+  const { upload, saveUrl } = useGalleryStore()
   const fileRef = useRef<HTMLInputElement>(null)
+  const [tab, setTab] = useState<'upload' | 'recover'>('upload')
   const [file, setFile] = useState<File | null>(null)
   const [preview, setPreview] = useState<string | null>(null)
   const [selectedTags, setSelectedTags] = useState<string[]>([])
   const [caption, setCaption] = useState('')
+  const [cloudinaryUrl, setCloudinaryUrl] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [progress, setProgress] = useState(0)
 
@@ -228,16 +277,31 @@ function UploadModal({ onClose }: { onClose: () => void }) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!file || submitting) return
+    if (submitting) return
+
     setSubmitting(true)
     setProgress(0)
     try {
-      await upload(file, selectedTags, caption || undefined, setProgress)
+      if (tab === 'recover') {
+        const url = cloudinaryUrl.trim()
+        if (!url || !url.includes('cloudinary.com')) {
+          alert('Please paste a valid Cloudinary image URL.')
+          return
+        }
+        await saveUrl(url, selectedTags, caption || undefined)
+      } else {
+        if (!file) return
+        await upload(file, selectedTags, caption || undefined, setProgress)
+      }
       onClose()
     } finally {
       setSubmitting(false)
     }
   }
+
+  const tabStyle = (active: boolean) => active
+    ? { background: 'var(--theme-gradient)', color: 'white' }
+    : { background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.5)' }
 
   return (
     <motion.div
@@ -257,26 +321,60 @@ function UploadModal({ onClose }: { onClose: () => void }) {
         className="relative w-full max-w-md glass rounded-3xl p-7"
         style={{ border: '1px solid color-mix(in srgb, var(--theme-accent) 20%, transparent)' }}
       >
-        <h2 className="text-xl font-bold gradient-text-static mb-5"
+        <h2 className="text-xl font-bold gradient-text-static mb-4"
           style={{ fontFamily: "'Playfair Display', serif" }}>
-          Upload Photo
+          Add Photo
         </h2>
+
+        {/* Tabs */}
+        <div className="flex gap-2 mb-5">
+          <button type="button" onClick={() => setTab('upload')}
+            className="flex-1 py-2 rounded-xl text-xs font-medium transition-all"
+            style={tabStyle(tab === 'upload')}>
+            📷 Upload File
+          </button>
+          <button type="button" onClick={() => setTab('recover')}
+            className="flex-1 py-2 rounded-xl text-xs font-medium transition-all"
+            style={tabStyle(tab === 'recover')}>
+            🔗 Recover from URL
+          </button>
+        </div>
+
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div
-            className="w-full h-48 rounded-2xl border border-dashed border-theme-dashed flex items-center justify-center cursor-pointer overflow-hidden relative"
-            onClick={() => fileRef.current?.click()}
-          >
-            {preview ? (
-              <img src={preview} alt="" className="w-full h-full object-cover" />
-            ) : (
-              <div className="text-center text-white/30">
-                <ImageIcon size={32} className="mx-auto mb-2 opacity-40" />
-                <p className="text-sm">Click to select image</p>
+          {tab === 'upload' ? (
+            <>
+              <div
+                className="w-full h-48 rounded-2xl border border-dashed border-theme-dashed flex items-center justify-center cursor-pointer overflow-hidden relative"
+                onClick={() => fileRef.current?.click()}
+              >
+                {preview ? (
+                  <img src={preview} alt="" className="w-full h-full object-cover" />
+                ) : (
+                  <div className="text-center text-white/30">
+                    <ImageIcon size={32} className="mx-auto mb-2 opacity-40" />
+                    <p className="text-sm">Click to select image</p>
+                  </div>
+                )}
               </div>
-            )}
-          </div>
-          <input ref={fileRef} type="file" accept="image/*" className="hidden"
-            onChange={e => e.target.files?.[0] && handleFile(e.target.files[0])} />
+              <input ref={fileRef} type="file" accept="image/*" className="hidden"
+                onChange={e => e.target.files?.[0] && handleFile(e.target.files[0])} />
+            </>
+          ) : (
+            <div className="space-y-2">
+              <p className="text-white/40 text-xs">
+                Paste the Cloudinary URL of an image that was uploaded but didn't appear in the gallery.
+              </p>
+              <input
+                value={cloudinaryUrl}
+                onChange={e => setCloudinaryUrl(e.target.value)}
+                placeholder="https://res.cloudinary.com/..."
+                className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/20 text-xs outline-none border-theme-focus"
+              />
+              {cloudinaryUrl && cloudinaryUrl.includes('cloudinary.com') && (
+                <img src={cloudinaryUrl} alt="preview" className="w-full h-40 object-cover rounded-xl mt-2" />
+              )}
+            </div>
+          )}
 
           <div>
             <p className="text-white/40 text-xs uppercase tracking-widest mb-2">Who's in this photo?</p>
@@ -307,16 +405,17 @@ function UploadModal({ onClose }: { onClose: () => void }) {
               className="flex-1 py-3 rounded-xl glass-light text-white/50 hover:text-white text-sm transition-colors disabled:opacity-40">
               Cancel
             </button>
-            <motion.button type="submit" disabled={submitting || !file}
+            <motion.button type="submit"
+              disabled={submitting || (tab === 'upload' && !file) || (tab === 'recover' && !cloudinaryUrl.trim())}
               whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
               className="flex-1 py-3 rounded-xl font-medium text-white text-sm disabled:opacity-50"
               style={{ background: 'var(--theme-gradient)' }}>
-              {submitting ? 'Uploading...' : 'Upload'}
+              {submitting ? (tab === 'recover' ? 'Saving...' : 'Uploading...') : (tab === 'recover' ? 'Save to Gallery' : 'Upload')}
             </motion.button>
           </div>
 
           <AnimatePresence>
-            {submitting && (
+            {submitting && tab === 'upload' && (
               <motion.div
                 initial={{ opacity: 0, y: 4 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -353,7 +452,7 @@ export default function GalleryPage() {
   const [showUpload, setShowUpload] = useState(false)
   const displayed = filteredItems()
 
-  useEffect(() => { fetch() }, [])
+  useEffect(() => { fetch({ force: true }) }, [])
 
   return (
     <Layout>

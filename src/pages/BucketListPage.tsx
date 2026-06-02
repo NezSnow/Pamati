@@ -577,7 +577,7 @@ export default function BucketListPage() {
           {/* Progress */}
           {items.length > 0 && <ProgressBar items={items} />}
 
-          {loading ? (
+          {loading && items.length === 0 ? (
             <div className="space-y-3">
               {[...Array(4)].map((_, i) => (
                 <div key={i} className="h-20 rounded-2xl animate-pulse" style={{ background: 'rgba(255,255,255,0.03)' }} />

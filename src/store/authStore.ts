@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { supabase } from '../lib/supabase'
+import { supabase, formatAuthError } from '../lib/supabase'
 import { uploadToCloudinary } from '../lib/cloudinary'
 import type { User, Session } from '@supabase/supabase-js'
 import type { ThemeKey } from '../lib/fruitTheme'
@@ -64,13 +64,27 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   error: null,
 
   initialize: async () => {
-    const { data: { session } } = await supabase.auth.getSession()
-    if (session?.user) {
-      const theme = resolveStoredTheme(session.user.email)
-      set({ user: session.user, session, fruitTheme: theme })
-      await get().fetchProfile(session.user.id)
+    // Safety net: never let the loading spinner hang for more than 10 s
+    const timeout = setTimeout(() => {
+      console.warn('[authStore] initialize timed out — clearing loading flag')
+      set({ loading: false })
+    }, 10_000)
+
+    try {
+      const { data: { session }, error } = await supabase.auth.getSession()
+      if (error) console.error('[authStore] getSession error:', error)
+
+      if (session?.user) {
+        const theme = resolveStoredTheme(session.user.email)
+        set({ user: session.user, session, fruitTheme: theme })
+        await get().fetchProfile(session.user.id)
+      }
+    } catch (err) {
+      console.error('[authStore] initialize error:', err)
+    } finally {
+      clearTimeout(timeout)
+      set({ loading: false })
     }
-    set({ loading: false })
 
     supabase.auth.onAuthStateChange(async (_event, session) => {
       if (session?.user) {
@@ -91,10 +105,18 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       return
     }
 
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+    let data: Awaited<ReturnType<typeof supabase.auth.signInWithPassword>>['data']
+    let error: Awaited<ReturnType<typeof supabase.auth.signInWithPassword>>['error']
+    try {
+      ;({ data, error } = await supabase.auth.signInWithPassword({ email, password }))
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Sign-in failed'
+      set({ error: formatAuthError(msg), loading: false })
+      return
+    }
 
     if (error) {
-      set({ error: error.message, loading: false })
+      set({ error: formatAuthError(error.message), loading: false })
       return
     }
 
@@ -124,11 +146,16 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   fetchProfile: async (userId: string) => {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('users')
       .select('*')
       .eq('id', userId)
       .single()
+
+    if (error && error.code !== 'PGRST116') {
+      // PGRST116 = row not found (expected for new users); anything else is unexpected
+      console.error('[authStore] fetchProfile error:', error)
+    }
 
     if (data) {
       set({ profile: data as UserProfile })
@@ -145,8 +172,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       name: defaultName,
       avatar_url: null,
     }
-    const { error } = await supabase.from('users').upsert(defaultProfile)
-    if (!error) set({ profile: defaultProfile })
+    const { error: upsertError } = await supabase.from('users').upsert(defaultProfile)
+    if (!upsertError) set({ profile: defaultProfile })
   },
 
   updateProfile: async (fields) => {

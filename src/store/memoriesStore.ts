@@ -22,7 +22,7 @@ interface MemoriesState {
   memories: Memory[]
   loading: boolean
   selectedMemory: Memory | null
-  fetch: () => Promise<void>
+  fetch: (opts?: { force?: boolean }) => Promise<void>
   create: (data: Omit<Memory, 'id' | 'created_at' | 'images'>, images: File[]) => Promise<void>
   updateMemory: (id: string, fields: { title?: string; description?: string; date?: string }) => Promise<{ error: string | null }>
   addImages: (memoryId: string, files: File[]) => Promise<MemoryImage[]>
@@ -30,31 +30,60 @@ interface MemoriesState {
   setSelected: (memory: Memory | null) => void
 }
 
+let memoriesFetchInFlight: Promise<void> | null = null
+let memoriesLastFetchedAt = 0
+const MEMORIES_CACHE_MS = 60_000
+
 export const useMemoriesStore = create<MemoriesState>((set, get) => ({
   memories: [],
   loading: false,
   selectedMemory: null,
 
-  fetch: async () => {
-    set({ loading: true })
-    const { data: memories } = await supabase
-      .from('memories')
-      .select('*')
-      .order('date', { ascending: false })
-
-    if (memories) {
-      const memoriesWithImages = await Promise.all(
-        memories.map(async (m) => {
-          const { data: imgs } = await supabase
-            .from('memory_images')
-            .select('*')
-            .eq('memory_id', m.id)
-          return { ...m, images: imgs || [] }
-        })
-      )
-      set({ memories: memoriesWithImages as Memory[] })
+  fetch: async (opts) => {
+    const hasCache = get().memories.length > 0
+    if (
+      !opts?.force &&
+      hasCache &&
+      Date.now() - memoriesLastFetchedAt < MEMORIES_CACHE_MS
+    ) {
+      return
     }
-    set({ loading: false })
+    if (memoriesFetchInFlight) return memoriesFetchInFlight
+
+    if (!hasCache) set({ loading: true })
+
+    memoriesFetchInFlight = (async () => {
+      try {
+        const [memoriesResult, imagesResult] = await Promise.all([
+          supabase.from('memories').select('*').order('date', { ascending: false }),
+          supabase.from('memory_images').select('*'),
+        ])
+
+        if (memoriesResult.error) {
+          console.error('[memoriesStore] fetch memories error:', memoriesResult.error)
+          return
+        }
+        if (imagesResult.error) {
+          console.error('[memoriesStore] fetch images error:', imagesResult.error)
+        }
+
+        const memories = memoriesResult.data ?? []
+        const allImages = imagesResult.data ?? []
+
+        const memoriesWithImages = memories.map(m => ({
+          ...m,
+          images: allImages.filter(img => img.memory_id === m.id),
+        }))
+
+        memoriesLastFetchedAt = Date.now()
+        set({ memories: memoriesWithImages as Memory[] })
+      } finally {
+        set({ loading: false })
+        memoriesFetchInFlight = null
+      }
+    })()
+
+    return memoriesFetchInFlight
   },
 
   create: async (data, imageFiles) => {
@@ -89,7 +118,7 @@ export const useMemoriesStore = create<MemoriesState>((set, get) => ({
     const { error } = await supabase.from('memories').update(fields).eq('id', id)
     if (error) {
       // Revert
-      await get().fetch()
+      await get().fetch({ force: true })
       return { error: error.message }
     }
     return { error: null }
