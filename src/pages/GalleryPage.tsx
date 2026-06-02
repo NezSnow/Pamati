@@ -255,14 +255,12 @@ function Lightbox({ item, items, onClose, onDelete }: {
 }
 
 function UploadModal({ onClose }: { onClose: () => void }) {
-  const { upload, saveUrl } = useGalleryStore()
+  const { upload } = useGalleryStore()
   const fileRef = useRef<HTMLInputElement>(null)
-  const [tab, setTab] = useState<'upload' | 'recover'>('upload')
   const [file, setFile] = useState<File | null>(null)
   const [preview, setPreview] = useState<string | null>(null)
   const [selectedTags, setSelectedTags] = useState<string[]>([])
   const [caption, setCaption] = useState('')
-  const [cloudinaryUrl, setCloudinaryUrl] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [progress, setProgress] = useState(0)
 
@@ -277,31 +275,16 @@ function UploadModal({ onClose }: { onClose: () => void }) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (submitting) return
-
+    if (!file || submitting) return
     setSubmitting(true)
     setProgress(0)
     try {
-      if (tab === 'recover') {
-        const url = cloudinaryUrl.trim()
-        if (!url || !url.includes('cloudinary.com')) {
-          alert('Please paste a valid Cloudinary image URL.')
-          return
-        }
-        await saveUrl(url, selectedTags, caption || undefined)
-      } else {
-        if (!file) return
-        await upload(file, selectedTags, caption || undefined, setProgress)
-      }
+      await upload(file, selectedTags, caption || undefined, setProgress)
       onClose()
     } finally {
       setSubmitting(false)
     }
   }
-
-  const tabStyle = (active: boolean) => active
-    ? { background: 'var(--theme-gradient)', color: 'white' }
-    : { background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.5)' }
 
   return (
     <motion.div
@@ -321,60 +304,26 @@ function UploadModal({ onClose }: { onClose: () => void }) {
         className="relative w-full max-w-md glass rounded-3xl p-7"
         style={{ border: '1px solid color-mix(in srgb, var(--theme-accent) 20%, transparent)' }}
       >
-        <h2 className="text-xl font-bold gradient-text-static mb-4"
+        <h2 className="text-xl font-bold gradient-text-static mb-5"
           style={{ fontFamily: "'Playfair Display', serif" }}>
-          Add Photo
+          Upload Photo
         </h2>
-
-        {/* Tabs */}
-        <div className="flex gap-2 mb-5">
-          <button type="button" onClick={() => setTab('upload')}
-            className="flex-1 py-2 rounded-xl text-xs font-medium transition-all"
-            style={tabStyle(tab === 'upload')}>
-            📷 Upload File
-          </button>
-          <button type="button" onClick={() => setTab('recover')}
-            className="flex-1 py-2 rounded-xl text-xs font-medium transition-all"
-            style={tabStyle(tab === 'recover')}>
-            🔗 Recover from URL
-          </button>
-        </div>
-
         <form onSubmit={handleSubmit} className="space-y-4">
-          {tab === 'upload' ? (
-            <>
-              <div
-                className="w-full h-48 rounded-2xl border border-dashed border-theme-dashed flex items-center justify-center cursor-pointer overflow-hidden relative"
-                onClick={() => fileRef.current?.click()}
-              >
-                {preview ? (
-                  <img src={preview} alt="" className="w-full h-full object-cover" />
-                ) : (
-                  <div className="text-center text-white/30">
-                    <ImageIcon size={32} className="mx-auto mb-2 opacity-40" />
-                    <p className="text-sm">Click to select image</p>
-                  </div>
-                )}
+          <div
+            className="w-full h-48 rounded-2xl border border-dashed border-theme-dashed flex items-center justify-center cursor-pointer overflow-hidden relative"
+            onClick={() => fileRef.current?.click()}
+          >
+            {preview ? (
+              <img src={preview} alt="" className="w-full h-full object-cover" />
+            ) : (
+              <div className="text-center text-white/30">
+                <ImageIcon size={32} className="mx-auto mb-2 opacity-40" />
+                <p className="text-sm">Click to select image</p>
               </div>
-              <input ref={fileRef} type="file" accept="image/*" className="hidden"
-                onChange={e => e.target.files?.[0] && handleFile(e.target.files[0])} />
-            </>
-          ) : (
-            <div className="space-y-2">
-              <p className="text-white/40 text-xs">
-                Paste the Cloudinary URL of an image that was uploaded but didn't appear in the gallery.
-              </p>
-              <input
-                value={cloudinaryUrl}
-                onChange={e => setCloudinaryUrl(e.target.value)}
-                placeholder="https://res.cloudinary.com/..."
-                className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/20 text-xs outline-none border-theme-focus"
-              />
-              {cloudinaryUrl && cloudinaryUrl.includes('cloudinary.com') && (
-                <img src={cloudinaryUrl} alt="preview" className="w-full h-40 object-cover rounded-xl mt-2" />
-              )}
-            </div>
-          )}
+            )}
+          </div>
+          <input ref={fileRef} type="file" accept="image/*" className="hidden"
+            onChange={e => e.target.files?.[0] && handleFile(e.target.files[0])} />
 
           <div>
             <p className="text-white/40 text-xs uppercase tracking-widest mb-2">Who's in this photo?</p>
@@ -405,12 +354,11 @@ function UploadModal({ onClose }: { onClose: () => void }) {
               className="flex-1 py-3 rounded-xl glass-light text-white/50 hover:text-white text-sm transition-colors disabled:opacity-40">
               Cancel
             </button>
-            <motion.button type="submit"
-              disabled={submitting || (tab === 'upload' && !file) || (tab === 'recover' && !cloudinaryUrl.trim())}
+            <motion.button type="submit" disabled={submitting || !file}
               whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
               className="flex-1 py-3 rounded-xl font-medium text-white text-sm disabled:opacity-50"
               style={{ background: 'var(--theme-gradient)' }}>
-              {submitting ? (tab === 'recover' ? 'Saving...' : 'Uploading...') : (tab === 'recover' ? 'Save to Gallery' : 'Upload')}
+              {submitting ? 'Uploading...' : 'Upload'}
             </motion.button>
           </div>
 
