@@ -95,15 +95,22 @@ export const useMemoriesStore = create<MemoriesState>((set, get) => ({
 
     if (error || !memory) return
 
-    const newImages: MemoryImage[] = []
-    for (const file of imageFiles) {
-      const imageUrl = await uploadToCloudinary(file)
-      const { data: img } = await supabase.from('memory_images').insert({
-        memory_id: memory.id,
-        image_url: imageUrl,
-      }).select().single()
-      if (img) newImages.push(img as MemoryImage)
-    }
+    const uploadPromises = imageFiles.map(async (file) => {
+      try {
+        const imageUrl = await uploadToCloudinary(file)
+        const { data: img } = await supabase.from('memory_images').insert({
+          memory_id: memory.id,
+          image_url: imageUrl,
+        }).select().single()
+        return img ? (img as MemoryImage) : null
+      } catch (err) {
+        console.error('Image upload failed', err)
+        return null
+      }
+    })
+
+    const newImagesResults = await Promise.all(uploadPromises)
+    const newImages = newImagesResults.filter((img): img is MemoryImage => img !== null)
 
     const newMemory: Memory = { ...memory, images: newImages }
     set(s => ({ memories: [newMemory, ...s.memories] }))
@@ -125,15 +132,22 @@ export const useMemoriesStore = create<MemoriesState>((set, get) => ({
   },
 
   addImages: async (memoryId, files) => {
-    const added: MemoryImage[] = []
-    for (const file of files) {
-      const imageUrl = await uploadToCloudinary(file)
-      const { data: img } = await supabase.from('memory_images').insert({
-        memory_id: memoryId,
-        image_url: imageUrl,
-      }).select().single()
-      if (img) added.push(img as MemoryImage)
-    }
+    const uploadPromises = files.map(async (file) => {
+      try {
+        const imageUrl = await uploadToCloudinary(file)
+        const { data: img } = await supabase.from('memory_images').insert({
+          memory_id: memoryId,
+          image_url: imageUrl,
+        }).select().single()
+        return img ? (img as MemoryImage) : null
+      } catch (err) {
+        console.error('Image upload failed', err)
+        return null
+      }
+    })
+
+    const addedResults = await Promise.all(uploadPromises)
+    const added = addedResults.filter((img): img is MemoryImage => img !== null)
 
     // Patch in store
     set(s => ({
