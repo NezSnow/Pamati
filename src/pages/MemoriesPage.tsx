@@ -178,7 +178,22 @@ function MemoryModal({ memory, onClose }: { memory: Memory; onClose: () => void 
         {!editMode && (
           <>
             {images.length > 0 && (
-              <div className="relative h-72 bg-black/50 overflow-hidden flex-shrink-0">
+              <div className="relative h-80 sm:h-96 bg-black/90 overflow-hidden flex-shrink-0 flex items-center justify-center">
+                {/* Blurred Background */}
+                <AnimatePresence mode="wait">
+                  <motion.img
+                    key={`blur-${currentImg}`}
+                    src={cloudinaryUrl(images[currentImg].image_url, 400)}
+                    alt=""
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 0.4 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.4 }}
+                    className="absolute inset-0 w-full h-full object-cover blur-2xl scale-125"
+                  />
+                </AnimatePresence>
+
+                {/* Main Content Image */}
                 <AnimatePresence mode="wait">
                   <motion.img
                     key={currentImg}
@@ -188,12 +203,12 @@ function MemoryModal({ memory, onClose }: { memory: Memory; onClose: () => void 
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0 }}
                     transition={{ duration: 0.4 }}
-                    className="absolute inset-0 w-full h-full object-cover"
+                    className="absolute inset-0 w-full h-full object-contain"
                     decoding="async"
                   />
                 </AnimatePresence>
-                <div className="absolute inset-0"
-                  style={{ background: 'linear-gradient(to bottom, transparent 60%, rgba(5,5,8,0.85))' }} />
+                <div className="absolute inset-0 pointer-events-none"
+                  style={{ background: 'linear-gradient(to bottom, transparent 60%, rgba(5,5,8,0.95))' }} />
 
                 {images.length > 1 && (
                   <>
